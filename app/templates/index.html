@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestNote — Gestion des Performances Scolaires</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left">
+            <h1>GestNote</h1>
+            <span class="header-subtitle">Gestion des performances scolaires</span>
+        </div>
+        <div class="header-right">
+            <span id="anneeActive" class="annee-badge">Aucune année active</span>
+            <button class="btn btn-sm" id="btnLogout" onclick="logout()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);margin-left:10px">Déconnexion</button>
+        </div>
+    </header>
+
+    <nav class="tab-nav" id="tabNav">
+        <button class="tab-btn active" data-tab="config">Configuration</button>
+        <button class="tab-btn" data-tab="dashboard">Tableau de bord</button>
+        <button class="tab-btn" data-tab="import">Import de notes</button>
+        <button class="tab-btn" data-tab="eleves">Gestion élèves</button>
+        <button class="tab-btn" data-tab="rapports">Rapports</button>
+    </nav>
+
+    <main class="tab-content" id="tabContent">
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- ONGLET CONFIGURATION                          -->
+        <!-- ════════════════════════════════════════════════ -->
+        <section class="tab-panel active" id="tab-config">
+
+            <div class="config-grid">
+
+                <!-- Année scolaire -->
+                <div class="card">
+                    <h3>Année scolaire</h3>
+                    <div class="form-row">
+                        <input type="text" id="inputAnnee" placeholder="ex: 2025-2026" maxlength="9">
+                        <button class="btn btn-primary" id="btnCreerAnnee" onclick="creerAnnee()">Créer</button>
+                    </div>
+                    <div id="listeAnnees" class="liste-items"></div>
+                </div>
+
+                <!-- Classes -->
+                <div class="card">
+                    <h3>Classes</h3>
+                    <div class="form-row">
+                        <input type="text" id="inputClasseNom" placeholder="Nom (ex: 6ème A)">
+                        <select id="inputClasseNiveau">
+                            <option value="">Niveau...</option>
+                            <option value="6eme">6ème</option>
+                            <option value="5eme">5ème</option>
+                            <option value="4eme">4ème</option>
+                            <option value="3eme">3ème</option>
+                            <option value="2nde">2nde</option>
+                            <option value="1ere_A">1ère A</option>
+                            <option value="1ere_C">1ère C</option>
+                            <option value="1ere_D">1ère D</option>
+                            <option value="Tle_A">Tle A</option>
+                            <option value="Tle_C">Tle C</option>
+                            <option value="Tle_D">Tle D</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnCreerClasse" onclick="creerClasse()">Créer</button>
+                    </div>
+                    <div id="listeClasses" class="liste-items"></div>
+                    <div id="detailClasse" style="display:none;margin-top:12px;padding:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;"></div>
+                </div>
+
+                <!-- Coefficients -->
+                <div class="card">
+                    <h3>Coefficients</h3>
+                    <div class="form-row">
+                        <select id="inputCoefClasse" onchange="chargerCoefficients()">
+                            <option value="">Choisir une classe...</option>
+                        </select>
+                    </div>
+                    <div id="listeCoefficients" class="liste-items"></div>
+                </div>
+
+                <!-- Import élèves -->
+                <div class="card">
+                    <h3>Import élèves (CSV)</h3>
+                    <div class="form-row">
+                        <select id="inputImportEleveClasse">
+                            <option value="">Classe...</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <input type="file" id="inputFichierEleves" accept=".csv">
+                    </div>
+                    <button class="btn btn-primary" id="btnImportEleves" onclick="importEleves()">Importer</button>
+                    <div id="resultatImportEleves" class="resultat-msg"></div>
+                    <div class="format-info">
+                        Format attendu : <code>matricule,nom,prenom,date_naissance</code>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- ONGLET TABLEAU DE BORD                       -->
+        <!-- ════════════════════════════════════════════════ -->
+        <section class="tab-panel" id="tab-dashboard">
+            <div class="dashboard-controls">
+                <select id="inputDashClasse" onchange="chargerDashboard()">
+                    <option value="">Choisir une classe...</option>
+                </select>
+            </div>
+
+            <!-- Alertes -->
+            <div class="card" id="alertesSection">
+                <h3>Alertes pédagogiques</h3>
+                <div id="listeAlertes" class="liste-items"></div>
+            </div>
+
+            <!-- Stats -->
+            <div class="card">
+                <h3>Statistiques par matière</h3>
+                <div id="statsMatieres" class="table-responsive"></div>
+            </div>
+
+            <!-- Élèves -->
+            <div class="card">
+                <h3>Élèves</h3>
+                <div id="listeElevesDash" class="table-responsive"></div>
+            </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- ONGLET IMPORT DE NOTES                       -->
+        <!-- ════════════════════════════════════════════════ -->
+        <section class="tab-panel" id="tab-import">
+            <div class="card">
+                <h3>Import de notes</h3>
+                <div class="form-row">
+                    <select id="inputImportClasse" onchange="chargerMatieresImport()">
+                        <option value="">Classe...</option>
+                    </select>
+                    <select id="inputImportMatiere">
+                        <option value="">Matière...</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <input type="file" id="inputFichierNotes" accept=".csv">
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-primary" id="btnPreviewNotes" onclick="previewImportNotes()">Prévisualiser</button>
+                    <button class="btn btn-success" id="btnConfirmerImport" style="display:none" onclick="confirmerImportNotes()">Confirmer l'import</button>
+                </div>
+                <div id="previewImport" class="resultat-msg"></div>
+                <div id="previewTable" class="table-responsive"></div>
+                <div class="format-info">
+                    Format attendu : <code>matricule,nom_eleve,note,date</code>
+                </div>
+            </div>
+
+            <!-- Ajout manuel -->
+            <div class="card">
+                <h3>Ajout manuel de note</h3>
+                <div class="form-row">
+                    <select id="inputManuelClasse" onchange="chargerElevesManuel()">
+                        <option value="">Classe...</option>
+                    </select>
+                    <select id="inputManuelMatiere">
+                        <option value="">Matière...</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <select id="inputManuelEleve">
+                        <option value="">Élève...</option>
+                    </select>
+                    <input type="number" id="inputManuelNote" min="0" max="20" step="0.5" placeholder="Note (0-20)">
+                    <input type="date" id="inputManuelDate">
+                    <button class="btn btn-primary" id="btnAjouterNote" onclick="ajouterNoteManuelle()">Ajouter</button>
+                </div>
+                <div id="resultatManuel" class="resultat-msg"></div>
+            </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- ONGLET GESTION ÉLÈVES                        -->
+        <!-- ════════════════════════════════════════════════ -->
+        <section class="tab-panel" id="tab-eleves">
+            <div class="dashboard-controls" style="display:flex;gap:10px;flex-wrap:wrap">
+                <select id="inputBrowseClasse" onchange="parcourirClasse()">
+                    <option value="">Parcourir par classe...</option>
+                </select>
+                <input type="text" id="inputSearchEleve" placeholder="Ou rechercher (nom, prénom, matricule)..." oninput="rechercherEleves()" style="flex:1;min-width:220px">
+            </div>
+            <div id="resultatsRecherche" class="liste-items"></div>
+
+            <div class="card" style="margin-top:20px">
+                <h3>Ajouter un élève</h3>
+                <div class="form-row">
+                    <select id="inputAjoutClasse">
+                        <option value="">Classe...</option>
+                    </select>
+                    <input type="text" id="inputAjoutMatricule" placeholder="Matricule">
+                    <input type="text" id="inputAjoutNom" placeholder="Nom">
+                    <input type="text" id="inputAjoutPrenom" placeholder="Prénom">
+                    <input type="date" id="inputAjoutNaissance">
+                    <button class="btn btn-primary" id="btnAjouterEleve" onclick="ajouterEleve()">Ajouter</button>
+                </div>
+                <div id="resultatAjoutEleve" class="resultat-msg"></div>
+            </div>
+
+            <div id="ficheEleve" style="display:none"></div>
+        </section>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- ONGLET RAPPORTS                              -->
+        <!-- ════════════════════════════════════════════════ -->
+        <section class="tab-panel" id="tab-rapports">
+            <div class="dashboard-controls" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <select id="inputRapportClasse" onchange="chargerRapports()">
+                    <option value="">Choisir une classe...</option>
+                </select>
+                <button class="btn btn-primary" id="btnExportCSV" onclick="exporterRapportCSV()" style="display:none">Exporter CSV</button>
+            </div>
+            <div class="card">
+                <h3>Synthèse de la classe</h3>
+                <div id="syntheseClasse"></div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartDistribution"></canvas>
+            </div>
+            <div class="card">
+                <h3>Détail des notes par matière</h3>
+                <div id="rapportDetails" class="table-responsive"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Login overlay -->
+    <div id="loginOverlay" style="display:none">
+        <div class="login-box">
+            <div class="login-logo">
+                <h2>GestNote</h2>
+                <p>Gestion des performances scolaires</p>
+            </div>
+            <div class="form-group">
+                <label for="loginUser">Identifiant</label>
+                <input type="text" id="loginUser" placeholder="admin" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="loginPass">Mot de passe</label>
+                <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn btn-primary" id="btnLogin" onclick="login()" style="width:100%;padding:10px">Se connecter</button>
+            <div id="loginError" class="resultat-msg" style="margin-top:10px;text-align:center"></div>
+        </div>
+    </div>
+
+    <div id="modalFicheEleve" class="modal" style="display:none">
+        <div class="modal-content">
+            <span class="modal-close" onclick="fermerFiche()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

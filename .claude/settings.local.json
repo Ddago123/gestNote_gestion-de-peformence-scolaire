@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Recurse -Name | Where-Object {$_ -notmatch 'node_modules|__pycache__|\\\\.git|\\\\.venv|\\\\.vscode|\\\\.db'} | Sort-Object)"
+    ]
+  }
+}
